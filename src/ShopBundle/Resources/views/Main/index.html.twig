@@ -1,0 +1,109 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <div class="container">
+        {% if productList %}
+            {% for product in productList %}
+                <div class="col-xs-2">
+                    <h3>{{ product.name }}</h3>
+                    <p align="center">{{ product.description }}</p>
+                    <p style="float: left">{{ product.storage }} item{% if product.price > 1 %}s{% endif %} left</p>
+                    <span style="float: right">{{ product.price }}$</span>
+                    <a href="javascript:void(0);" class="btn btn-success btn-xs buyItem" data-id="{{ product.id }}" data-storage="{{ product.storage }}" style="float: right; margin-right: 10px;">Buy me!</a>
+                </div>
+                {% if loop.index % 6 == 0 %}
+                    <div class="col-xs-12"><hr></div>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block footer %}
+    <div class="modal fade" tabindex="-1" id="purchaseModal">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="max-width: 300px;">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="purchaseFormTitle"></h4>
+                </div>
+                <div class="modal-body">
+                    <span>How many do you need?</span>
+                    <input type="number" name="amount" id="amount" min="1" max="100" value="1" style="float: right;">
+                    <input type="hidden" name="productID" id="productID">
+                </div>
+                <div class="modal-footer">
+                    <span id="purchaseFormPrice"></span>$
+                    <button type="button" class="btn btn-primary" id="purchaseFormSubmit">Buy!</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" tabindex="-1" id="purchaseFinishModal">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title">Thank you!</h4>
+                </div>
+                <div class="modal-body" id="purchaseFinishText">
+
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script type="text/javascript">
+        $(document).ready(function(){
+            var price = 0;
+            var amountMax = 0;
+            $('body')
+                .on('click', '.buyItem', function(){
+                    price = $(this).parent().children('span').text().replace('$', '');
+                    amountMax = $(this).attr('data-storage');
+                    $('#purchaseFormPrice').text(price);
+                    $('#productID').val($(this).attr('data-id'));
+                    $('#purchaseFormTitle').text($(this).parent().children('h3').text());
+                    $('#purchaseModal').modal('toggle');
+                    $('#amount').val(1);
+                })
+                .on('input', '#amount', function(){
+                    $('#purchaseFormPrice').text(price*$(this).val());
+                })
+                .on('click', '#purchaseFormSubmit', function(){
+                    $('.error').remove();
+                    var amount = parseInt($('#amount').val());
+                    if (amount < 1 || amount > amountMax) {
+                        $('#purchaseFormPrice').parent().prepend('<span class="error" style="color: red;">Incorrect product amount!</span>');
+                    } else {
+                        var productID = $('#productID').val();
+                        $.ajax({
+                            method: "POST",
+                            url: "{{ path('make_purchase') }}",
+                            data: {
+                                productID:  productID,
+                                amount:     amount,
+                                priceTotal: price
+                            },
+                            success: function(response){
+                                $('#purchaseFinishText').empty();
+                                if (response.status == 'success') {
+                                    var text = amount > 1 ? '<p>You just bought '+amount+' items of '+$('#purchaseFormTitle').text()+' for '+price+'$</p>'
+                                                            : '<p>You just bought '+amount+' item of '+$('#purchaseFormTitle').text()+' for '+price+'$</p>';
+                                    $('#purchaseFinishText').append(text);
+                                    $('#purchaseModal').modal('toggle');
+                                    $('#purchaseFinishModal').modal('toggle');
+                                } else {
+                                    $('#purchaseFormPrice').parent().prepend('<span class="error" style="color: red;">Something wrong :(</span>');
+                                }
+                            }
+                        });
+                    }
+                })
+            ;
+        })
+    </script>
+{% endblock %}
