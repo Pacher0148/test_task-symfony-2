@@ -1,0 +1,22 @@
+services:
+    app.admin.purchase:
+        class: ShopBundle\Admin\PurchaseAdmin
+        tags:
+            - { name: sonata.admin, manager_type: orm, group: "Content", label: "Purchase" }
+        arguments:
+            - ~
+            - ShopBundle\Entity\Purchase
+            - ~
+        calls:
+            - [ setTranslationDomain, [ShopBundle]]
+
+    app.admin.product:
+        class: ShopBundle\Admin\ProductAdmin
+        tags:
+            - { name: sonata.admin, manager_type: orm, group: "Content", label: "Product" }
+        arguments:
+            - ~
+            - ShopBundle\Entity\Product
+            - ~
+        calls:
+            - [ setTranslationDomain, [ShopBundle]]

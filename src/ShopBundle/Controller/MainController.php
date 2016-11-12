@@ -18,19 +18,25 @@ class MainController extends Controller
 
     public function purchaseAction(Request $request)
     {
+        $user = $this->getUser();
         $status = 'fail';
-        if ($request->get('amount') && $request->get('productID') && $request->get('priceTotal')) {
+        if ($user && $request->get('amount') && $request->get('productID') && $request->get('priceTotal')) {
             $em = $this->getDoctrine()->getManager();
 
             $purchase = new Purchase();
 
             $product = $em->getRepository('ShopBundle:Product')->findOneBy(array('id' => $request->get('productID')));
             $purchase->setProductId($product);
+            $purchase->setUserId($user);
 
             $purchase->setAmount($request->get('amount'));
             $purchase->setTotalPrice($request->get('priceTotal'));
             $purchase->setDate(new \DateTime());
             $em->persist($purchase);
+            $em->flush();
+
+            $product->setStorage($product->getStorage() - $request->get('amount'));
+            $em->persist($product);
             $em->flush();
 
             $status = 'success';
