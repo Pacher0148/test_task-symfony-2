@@ -4,12 +4,12 @@
     <div class="container">
         {% if productList %}
             {% for product in productList %}
-                <div class="col-xs-2">
+                <div class="col-xs-2" id="productPlace{{ product.id }}">
                     <h3>{{ product.name }}</h3>
                     <p align="center">{{ product.description }}</p>
-                    <p style="float: left">{{ product.storage }} item{% if product.price > 1 %}s{% endif %} left</p>
+                    <p style="float: left" class="storagePlace">{{ product.storage }} item{% if product.price > 1 %}s{% endif %} left</p>
                     <span style="float: right">{{ product.price }}$</span>
-                    {% if app.user %}
+                    {% if app.user and product.storage > 0 %}
                         <br/>
                         <a href="javascript:void(0);" class="btn btn-success btn-xs buyItem" data-id="{{ product.id }}" data-storage="{{ product.storage }}" style="float: right; margin-right: 10px;">Buy me!</a>
                     {% endif %}
@@ -44,13 +44,16 @@
     </div>
     <div class="modal fade" tabindex="-1" id="purchaseFinishModal">
         <div class="modal-dialog" role="document">
-            <div class="modal-content">
+            <div class="modal-content" style="max-width: 400px;">
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                     <h4 class="modal-title">Thank you!</h4>
                 </div>
                 <div class="modal-body" id="purchaseFinishText">
 
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" data-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
@@ -83,6 +86,7 @@
                         $('#purchaseFormPrice').parent().prepend('<span class="error" style="color: red;">Incorrect product amount!</span>');
                     } else {
                         var productID = $('#productID').val();
+                        $('#purchaseFormSubmit').prop('disabled', true);
                         $.ajax({
                             method: "POST",
                             url: "{{ path('make_purchase') }}",
@@ -97,10 +101,21 @@
                                     var text = amount > 1 ? '<p>You just bought '+amount+' items of '+$('#purchaseFormTitle').text()+' for '+price+'$</p>'
                                                             : '<p>You just bought '+amount+' item of '+$('#purchaseFormTitle').text()+' for '+price+'$</p>';
                                     $('#purchaseFinishText').append(text);
+                                    var newStorage = amountMax - amount;
+                                    if (newStorage > 0) {
+                                        var storageLine = newStorage > 1 ? ' items left' : ' item left';
+                                        $($('#productPlace'+productID).children('.storagePlace')).text(newStorage+storageLine);
+                                    } else {
+                                        $('#productPlace'+productID).children('a').remove();
+                                    }
                                     $('#purchaseModal').modal('toggle');
                                     $('#purchaseFinishModal').modal('toggle');
                                 } else {
-                                    $('#purchaseFormPrice').parent().prepend('<span class="error" style="color: red;">Something wrong :(</span>');
+                                    if (response.status == 'fail') {
+                                        $('#purchaseFormPrice').parent().prepend('<span class="error" style="color: red;">'+response.case+'</span>');
+                                    } else {
+                                        $('#purchaseFormPrice').parent().prepend('<span class="error" style="color: red;">Something wrong :(</span>');
+                                    }
                                 }
                             }
                         });

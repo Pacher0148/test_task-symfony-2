@@ -4,6 +4,22 @@ parameters:
 #    parameter_name: value
 
 services:
-#    service_name:
-#        class: AppBundle\Directory\ClassName
-#        arguments: ["@another_service_name", "plain_value", "%parameter_name%"]
+  info_logger:
+    class: Monolog\Logger
+    arguments: [my_info]
+    calls:
+        - [pushHandler, [@info_log_handler]]
+
+  info_log_handler:
+    class: Monolog\Handler\StreamHandler
+    arguments: [%kernel.root_dir%/logs/info.log, 100]
+
+  error_logger:
+    class: Monolog\Logger
+    arguments: [my_info]
+    calls:
+        - [pushHandler, [@error_log_handler]]
+
+  error_log_handler:
+    class: Monolog\Handler\StreamHandler
+    arguments: [%kernel.root_dir%/logs/error.log, 100]
